@@ -182,8 +182,9 @@ class AutoUnsubscriber:
         print('Please note: deleted emails cannot be recovered\n')
         for j in range(len(self.senderList)):
             while True:
-                unsub = input('Open unsubscribe link from ' + str(self.senderList[j][0]) + ' (Y/N): ')
-                c = choice(unsub)
+                # unsub = input('Open unsubscribe link from ' + str(self.senderList[j][0]) + ' (Y/N): ')
+                # c = choice(unsub)
+                c = True  # Open all unsubscribe links
                 if c:
                     self.senderList[j][3] = True
                     self.goToLinks = True
@@ -193,8 +194,9 @@ class AutoUnsubscriber:
                 else:
                     print('Invalid choice, please enter \'Y\' or \'N\'.\n')
             while True:
-                delete = input('Delete emails from ' + str(self.senderList[j][1]) + ' (Y/N): ')
-                d = choice(delete)
+                # delete = input('Delete emails from ' + str(self.senderList[j][1]) + ' (Y/N): ')
+                # d = choice(delete)
+                d = False  # Do not delete e-mails
                 if d:
                     self.senderList[j][4] = True
                     self.delEmails = True
@@ -212,9 +214,10 @@ class AutoUnsubscriber:
         else:
             print('\nUnsubscribe links will be opened 10 at a time')
             counter = 0
-            for i in range(len(self.senderList)):
-                if self.senderList[i][3]:
-                    webbrowser.open(self.senderList[i][2])
+            filtered_sender_list = list(dict.fromkeys(self.senderList))  # remove duplicates from list
+            for i in range(len(filtered_sender_list)):
+                if filtered_sender_list[i][3]:
+                    webbrowser.open(filtered_sender_list[i][2])
                     counter += 1
                     if counter == 10:
                         print('Navigating to unsubscribe links')
