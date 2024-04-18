@@ -18,7 +18,7 @@ servers = [('Gmail', 'imap.gmail.com'), ('Outlook', 'imap-mail.outlook.com'),
 words = ['unsubscribe', 'subscription', 'optout']
 
 
-class AutoUnsubscriber():
+class AutoUnsubscriber:
 
     def __init__(self):
         self.email = ''
@@ -38,22 +38,22 @@ class AutoUnsubscriber():
 
     '''Get initial user info - email, password, and service provider'''
 
-    def getInfo(self):
+    def get_info(self):
         print('This program searches your email for junk mail to unsubscribe from and delete')
         print('Supported emails: Gmail, Outlook, Hotmail, Yahoo, AOL, Zoho,')
         print('AT&T, Comcast, and Verizon')
         print('Please note: you may need to allow access to less secure apps')
-        getEmail = True
-        while getEmail:
+        get_email = True
+        while get_email:
             self.email = input('\nEnter your email address: ')
             for j in range(len(self.providers)):
                 choice = self.providers[j].search(self.email)
-                if choice != None:
+                if choice is not None:
                     self.user = servers[j]
                     print('\nLooks like you\'re using a ' + self.user[0] + ' account\n')
-                    getEmail = False
+                    get_email = False
                     break
-            if self.user == None:
+            if self.user is None:
                 print('\nNo usable email type detected, try a different account')
         self.password = getpass.getpass('Enter password for ' + self.email + ': ')
 
@@ -72,43 +72,43 @@ class AutoUnsubscriber():
 
     '''Attempt to log in to server. On failure, force user to re-enter info'''
 
-    def accessServer(self, readonly=True):
+    def access_server(self, readonly=True):
         if self.email == '':
-            self.getInfo()
+            self.get_info()
         attempt = self.login(readonly)
         if not attempt:
-            self.accessServer(readonly)
+            self.access_server(readonly)
 
     '''Search for emails with unsubscribe in the body. If sender not already in
     senderList, parse email for unsubscribe link. If link found, add name, email,
     link (plus metadata for decisions) to senderList. If not, add to noLinkList.
     '''
 
-    def getEmails(self):
+    def get_emails(self):
         print('Getting emails with unsubscribe in the body\n')
-        _, UIDs = self.imap.search(None, 'BODY', 'unsubscribe')
+        _, ui_ds = self.imap.search(None, 'BODY', 'unsubscribe')
 
         print('Getting links and addresses\n')
-        for UID in UIDs[0].split():
+        for UID in ui_ds[0].split():
             _, data = self.imap.fetch(UID, '(RFC822)')
             raw = data[0][1]
 
             '''Get address and check if sender already in senderList'''
             msg = pyzmail.PyzMessage.factory(raw)
             sender = msg.get_addresses('from')
-            trySender = True
+            try_sender = True
             for spammers in self.senderList:
                 if sender[0][1] in spammers:
-                    trySender = False
+                    try_sender = False
 
             '''If not, search for link'''
-            if trySender:
+            if try_sender:
                 '''Encode and decode to cp437 to handle unicode errors and get
                 rid of characters that can't be printed by Windows command line
                 which has default setting of cp437
                 '''
-                senderName = sender[0][0].encode('cp437', 'ignore').decode('cp437')
-                print('Searching for unsubscribe link from ' + senderName)
+                sender_name = sender[0][0].encode('cp437', 'ignore').decode('cp437')
+                print('Searching for unsubscribe link from ' + sender_name)
                 url = False
 
                 '''Parse html for elements with anchor tags'''
@@ -137,14 +137,14 @@ class AutoUnsubscriber():
                 If no link found, add to noLinkList
                 '''
                 if url:
-                    self.senderList.append([senderName, sender[0][1], url, False, False])
+                    self.senderList.append([sender_name, sender[0][1], url, False, False])
                 else:
                     print('No link found')
-                    notInList = True
+                    not_in_list = True
                     for noLinkers in self.noLinkList:
                         if sender[0][1] in noLinkers:
-                            notInList = False
-                    if notInList:
+                            not_in_list = False
+                    if not_in_list:
                         self.noLinkList.append([sender[0][0], sender[0][1]])
 
         try:
@@ -153,30 +153,30 @@ class AutoUnsubscriber():
         except Exception as e:
             print(f'Error logging out: {e}')
 
-    def displayEmailInfo(self):
-        if self.noLinkList != []:
+    def display_email_info(self):
+        if self.noLinkList:
             print('Could not find unsubscribe links from these senders:')
-            noList = '| '
+            no_list = '| '
             for i in range(len(self.noLinkList)):
-                noList += (str(self.noLinkList[i][0])+' | ')
-            print(noList)
-        if self.senderList != []:
+                no_list += (str(self.noLinkList[i][0])+' | ')
+            print(no_list)
+        if self.senderList:
             print('\nFound unsubscribe links from these senders:')
-            fullList = '| '
+            full_list = '| '
             for i in range(len(self.senderList)):
-                fullList += (str(self.senderList[i][0])+' | ')
-            print(fullList)
+                full_list += (str(self.senderList[i][0])+' | ')
+            print(full_list)
 
     def decisions(self):
-        def choice(userInput):
-            if userInput.lower() == 'y':
+        def choice(user_input):
+            if user_input.lower() == 'y':
                 return True
-            elif userInput.lower() == 'n':
+            elif user_input.lower() == 'n':
                 return False
             else:
                 return None
 
-        self.displayEmailInfo()
+        self.display_email_info()
         print('\nYou may now decide which emails to unsubscribe from and/or delete')
         print('Navigating to unsubscribe links may not automatically unsubscribe you')
         print('Please note: deleted emails cannot be recovered\n')
@@ -206,7 +206,7 @@ class AutoUnsubscriber():
 
     '''Navigate to selected unsubscribe, 10 at a time'''
 
-    def openLinks(self):
+    def open_links(self):
         if not self.goToLinks:
             print('\nNo unsubscribe links selected to navigate to')
         else:
@@ -226,29 +226,29 @@ class AutoUnsubscriber():
     Emails from provider without unsubscribe in the body will not be deleted.
     '''
 
-    def deleteEmails(self):
+    def delete_emails(self):
         if not self.delEmails:
             print('\nNo emails selected to delete')
         else:
             print('\nLogging into email server to delete emails')
             '''Pass false to self.login() so as to NOT be in readonly mode'''
             self.login(False)
-            DelTotal = 0
+            del_total = 0
             for i in range(len(self.senderList)):
                 if self.senderList[i][4]:
                     print('Searching for emails to delete from ' + str(self.senderList[i][1]))
-                    fromSender = 'FROM ' + str(self.senderList[i][1])
+                    from_sender = 'FROM ' + str(self.senderList[i][1])
                     '''Search for unsubscribe in body from selected providers'''
-                    _, DelUIDs = self.imap.search(None, 'BODY', 'unsubscribe', fromSender)
-                    DelCount = 0
-                    for DelUID in DelUIDs[0].split():
+                    _, del_ui_ds = self.imap.search(None, 'BODY', 'unsubscribe', from_sender)
+                    del_count = 0
+                    for DelUID in del_ui_ds[0].split():
                         '''Delete emails from selected providers'''
                         self.imap.store(DelUID, '+FLAGS', '\\Deleted')
                         self.imap.expunge()
-                        DelCount += 1
-                    print('Deleted ' + str(DelCount) + ' emails from ' + str(self.senderList[i][1]))
-                    DelTotal += DelCount
-            print('\nTotal emails deleted: ' + str(DelTotal))
+                        del_count += 1
+                    print('Deleted ' + str(del_count) + ' emails from ' + str(self.senderList[i][1]))
+                    del_total += del_count
+            print('\nTotal emails deleted: ' + str(del_total))
             print('\nLogging out of email server')
             self.imap.logout()
 
@@ -256,7 +256,7 @@ class AutoUnsubscriber():
     for email, password, email provider, etc.
     '''
 
-    def runAgain(self):
+    def run_again(self):
         self.goToLinks = False
         self.delEmails = False
         self.senderList = []
@@ -264,18 +264,18 @@ class AutoUnsubscriber():
 
     '''Reset everything to get completely new user info'''
 
-    def newEmail(self):
+    def new_email(self):
         self.email = ''
         self.user = None
         self.password = ''
         self.imap = None
-        self.runAgain()
+        self.run_again()
 
     '''Called after program has run, allow user to run again on same email, run
     on a different email, or quit the program
     '''
 
-    def nextMove(self):
+    def next_move(self):
         print('\nRun this program again on the same email, a different email, or quit?\n')
         while True:
             print('Press \'A\' to run again on ' + str(self.email))
@@ -283,11 +283,11 @@ class AutoUnsubscriber():
             again = input('Press \'Q\' to quit: ')
             if again.lower() == 'a':
                 print('\nRunning program again for ' + str(self.email) + '\n')
-                self.runAgain()
+                self.run_again()
                 return True
             elif again.lower() == 'd':
                 print('\nPreparing program to run on a different email address\n')
-                self.newEmail()
+                self.new_email()
                 return False
             elif again.lower() == 'q':
                 print('\nSo long, space cowboy!\n')
@@ -297,28 +297,28 @@ class AutoUnsubscriber():
 
     '''Full set of program commands. Works whether it has user info or not'''
 
-    def fullProcess(self):
-        self.accessServer()
-        self.getEmails()
+    def full_process(self):
+        self.access_server()
+        self.get_emails()
         if self.senderList:
             self.decisions()
-            self.openLinks()
-            self.deleteEmails()
+            self.open_links()
+            self.delete_emails()
         else:
             print('No unsubscribe links detected')
 
     '''Loop to run program and not quit until told to by user or closed'''
 
-    def usageLoop(self):
-        self.fullProcess()
+    def usage_loop(self):
+        self.full_process()
         while True:
-            self.nextMove()
-            self.fullProcess()
+            self.next_move()
+            self.full_process()
 
 
 def main():
-    Auto = AutoUnsubscriber()
-    Auto.usageLoop()
+    auto = AutoUnsubscriber()
+    auto.usage_loop()
 
 
 if __name__ == '__main__':
