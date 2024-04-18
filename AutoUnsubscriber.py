@@ -5,6 +5,7 @@ import getpass
 import webbrowser
 import re
 import sys
+from advancedprinter import print
 
 '''List of accepted service providers and respective imap link'''
 servers = [('Gmail', 'imap.gmail.com'), ('Outlook', 'imap-mail.outlook.com'),
@@ -39,10 +40,9 @@ class AutoUnsubscriber:
     '''Get initial user info - email, password, and service provider'''
 
     def get_info(self):
-        print('This program searches your email for junk mail to unsubscribe from and delete')
-        print('Supported emails: Gmail, Outlook, Hotmail, Yahoo, AOL, Zoho,')
-        print('AT&T, Comcast, and Verizon')
-        print('Please note: you may need to allow access to less secure apps')
+        print('This program searches your email for junk mail to unsubscribe from and delete\n'
+              'Supported emails: Gmail, Outlook, Hotmail, Yahoo, AOL, Zoho, AT&T, Comcast, and Verizon', c='cyan')
+        print('Please note: you may need to allow access to less secure apps', c='yellow')
         get_email = True
         while get_email:
             self.email = input('\nEnter your email address: ')
@@ -54,7 +54,7 @@ class AutoUnsubscriber:
                     get_email = False
                     break
             if self.user is None:
-                print('\nNo usable email type detected, try a different account')
+                print('\nNo usable email type detected, try a different account', c='red')
         self.password = getpass.getpass('Enter password for ' + self.email + ': ')
 
     '''Log in to IMAP server, argument determines whether readonly or not'''
@@ -67,7 +67,8 @@ class AutoUnsubscriber:
             print('\nLog in successful\n')
             return True
         except Exception as e:
-            print(f'\nAn error occurred while attempting to log in: {e}\n')
+            print(f'\nAn error occurred while attempting to log in:', c='red')
+            print(f"{e}\n")
             return False
 
     '''Attempt to log in to server. On failure, force user to re-enter info'''
@@ -75,9 +76,14 @@ class AutoUnsubscriber:
     def access_server(self, readonly=True):
         if self.email == '':
             self.get_info()
-        attempt = self.login(readonly)
-        if not attempt:
-            self.access_server(readonly)
+        attempt_count = 0
+        while attempt_count < 3:
+            attempt = self.login(readonly)
+            if attempt:
+                return
+            attempt_count += 1
+        print("Maximum attempts reached. Exiting.", c='yellow')
+        exit()
 
     '''Search for emails with unsubscribe in the body. If sender not already in
     senderList, parse email for unsubscribe link. If link found, add name, email,
@@ -119,7 +125,7 @@ class AutoUnsubscriber:
                     try:
                         html = msg.html_part.get_payload().decode('utf-8')
                     except UnicodeDecodeError:
-                        print("Error decoding HTML payload. Skipping this email.")
+                        print("Error decoding HTML payload. Skipping this email.", c='red')
                         continue
 
                     soup = bs4.BeautifulSoup(html, 'html.parser')
@@ -129,7 +135,7 @@ class AutoUnsubscriber:
                     for elem in elems:
                         for word in self.wordCheck:
                             if word.search(str(elem)):
-                                print('Link found')
+                                print('Link found', c='green')
                                 url = elem.get('href')
                                 break
                         if url:
@@ -142,7 +148,7 @@ class AutoUnsubscriber:
                 if url:
                     self.senderList.append([sender_name, sender[0][1], url, False, False])
                 else:
-                    print('No link found')
+                    print('No link found', c='red')
                     not_in_list = True
                     for noLinkers in self.noLinkList:
                         if sender[0][1] in noLinkers:
@@ -153,20 +159,20 @@ class AutoUnsubscriber:
             email_count += 1  # Increment email counter after processing each email
 
         try:
-            print('\nLogging out of email server\n')
+            print('\nLogging out of email server\n', c='yellow')
             self.imap.logout()
         except Exception as e:
-            print(f'Error logging out: {e}')
+            print(f'Error logging out: {e}', c='red')
 
     def display_email_info(self):
         if self.noLinkList:
-            print('Could not find unsubscribe links from these senders:')
+            print('Could not find unsubscribe links from these senders:', c='red')
             no_list = '| '
             for i in range(len(self.noLinkList)):
                 no_list += (str(self.noLinkList[i][0])+' | ')
             print(no_list)
         if self.senderList:
-            print('\nFound unsubscribe links from these senders:')
+            print('\nFound unsubscribe links from these senders:', c='green')
             full_list = '| '
             for i in range(len(self.senderList)):
                 full_list += (str(self.senderList[i][0])+' | ')
@@ -181,12 +187,12 @@ class AutoUnsubscriber:
                 elif user_input == 'n':
                     return False
                 else:
-                    print('Invalid choice, please enter \'Y\' or \'N\'.')
+                    print('Invalid choice, please enter \'Y\' or \'N\'.', c='yellow')
 
         self.display_email_info()
-        print('\nYou may now decide which emails to unsubscribe from and/or delete')
-        print('Navigating to unsubscribe links may not automatically unsubscribe you')
-        print('Please note: deleted emails cannot be recovered\n')
+        print('\nYou may now decide which emails to unsubscribe from and/or delete', c='cyan')
+        print('Navigating to unsubscribe links may not automatically unsubscribe you', c='cyan')
+        print('Please note: deleted emails cannot be recovered\n', c='yellow')
 
         choice = input("Do you want to decide for all e-mails or separate (A/S): ").lower()
         if choice == 'a':
@@ -215,7 +221,7 @@ class AutoUnsubscriber:
 
     def open_links(self):
         if not self.goToLinks:
-            print('\nNo unsubscribe links selected to navigate to')
+            print('\nNo unsubscribe links selected to navigate to', c='yellow')
         else:
             seen_emails = set()  # Initialize a set to store unique email addresses
             filtered_sender_list = []  # Initialize an empty list to store filtered sender information
@@ -241,10 +247,10 @@ class AutoUnsubscriber:
                         counter = 0
 
         try:
-            print('\nLogging out of email server\n')
+            print('\nLogging out of email server\n', c='yellow')
             self.imap.logout()
         except Exception as e:
-            print(f'Error logging out: {e}')
+            print(f'Error logging out: {e}', c='red')
 
     '''Log back into IMAP servers, NOT in readonly mode, and delete emails from
     selected providers. Note: only deleting emails with unsubscribe in the body.
@@ -253,7 +259,7 @@ class AutoUnsubscriber:
 
     def delete_emails(self):
         if not self.delEmails:
-            print('\nNo emails selected to delete')
+            print('\nNo emails selected to delete', c='yellow')
         else:
             print('\nLogging into email server to delete emails')
             '''Pass false to self.login() so as to NOT be in readonly mode'''
@@ -274,8 +280,11 @@ class AutoUnsubscriber:
                     print('Deleted ' + str(del_count) + ' emails from ' + str(self.senderList[i][1]))
                     del_total += del_count
             print('\nTotal emails deleted: ' + str(del_total))
-            print('\nLogging out of email server')
-            self.imap.logout()
+            try:
+                print('\nLogging out of email server\n', c='yellow')
+                self.imap.logout()
+            except Exception as e:
+                print(f'Error logging out: {e}', c='red')
 
     '''For re-running on same email. Clear lists, reset flags, but use same info
     for email, password, email provider, etc.
@@ -324,7 +333,7 @@ class AutoUnsubscriber:
 
     def full_process(self):
         self.access_server()
-        self.get_emails(scan_limit=None)  # set limit for testing
+        self.get_emails(scan_limit=100)  # set limit for testing
         if self.senderList:
             self.decisions()
             self.open_links()
