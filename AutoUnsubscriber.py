@@ -50,7 +50,7 @@ class AutoUnsubscriber:
                 choice = self.providers[j].search(self.email)
                 if choice is not None:
                     self.user = servers[j]
-                    print('\nLooks like you\'re using a ' + self.user[0] + ' account\n')
+                    print('\nLooks like you\'re using a ' + self.user[0] + ' account\n', c='yellow')
                     get_email = False
                     break
             if self.user is None:
@@ -333,7 +333,7 @@ class AutoUnsubscriber:
 
     def full_process(self):
         self.access_server()
-        self.get_emails(scan_limit=100)  # set limit for testing
+        self.get_emails(scan_limit=None)  # set limit for testing
         if self.senderList:
             self.decisions()
             self.open_links()
